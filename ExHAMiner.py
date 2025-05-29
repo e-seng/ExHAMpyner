@@ -15,7 +15,6 @@ import re
 
 #this also works with Questions_Advanced
 #it's expected that this
-RawQuestions = open("Questions_Basic.txt").read()
 AllQuestions = {}
 AnsweredWrong = set()
 AnsweredRight = set()
@@ -25,6 +24,19 @@ CapitalizedCamelCase = 'global variables'
 lowerCamelCase = 'local variables'
 underline_split = 'functions'
 """
+
+class Question:
+    def __init__(self,
+                 qID: str,
+                 qQuestion: str,
+                 qCorrect: str,
+                 qAnswers: str,
+                 qKeyWord: str,):
+        self.qID = qID
+        self.qQuestion = qQuestion
+        self.qCorrect = qCorrect
+        self.qAnswers = qAnswers
+        self.qKeyWord = qKeyWord
 
 def signal_handler(signal, frame):
     print('\n'+'-_'*30)
@@ -36,8 +48,22 @@ def signal_handler(signal, frame):
             print(wrongAnswers)
     sys.exit(0)
 
-def build_questions():
-    for i in re.split("(?=[A|B]-[0-9]*-[0-9]*-[0-9]*.*)", RawQuestions):
+def build_questions(bank_path: str) -> dict[str, Question]:
+    """
+    Parse the question bank as specified by the bank path
+
+    params
+    ------
+    - bank_path (str) a path to the question bank
+
+    returns a question bank, keys being the question ID and values being details
+    about the question
+    """
+    rawQuestions = None
+    with open(bank_path, "r") as f:
+        rawQuestions = f.read()
+
+    for i in re.split("(?=[A|B]-[0-9]*-[0-9]*-[0-9]*.*)", rawQuestions):
         if not re.search("([A|B]-[0-9]*-[0-9]*-[0-9]*)", i): continue
         ma = re.match("(?P<ID>[A|B]-[0-9]*-[0-9]*-[0-9]*)( \()(?P<ANSWER>[A-D])(\) )(?P<QUESTION>.*)(\r?\n)(A\t)(?P<QA>.*)(\r?\n)(B\t)(?P<QB>.*)(\r?\n)(C\t)(?P<QC>.*)(\r?\n)(D\t)(?P<QD>.*)(\r?\n)(>)(?P<KEYWORD>.*)",
                        i,
@@ -79,7 +105,11 @@ def ask_question():
 
 
 def main():
-    build_questions()
+    if(len(sys.argv) < 2):
+        print(f"[-] usage: {sys.argv[0]} <./path/to/question/bank>")
+        exit(1)
+    bank_path = sys.argv[1]
+    build_questions(bank_path)
     while True:
         signal.signal(signal.SIGINT, signal_handler)
         print('Press Ctrl+C to quit')
