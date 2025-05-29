@@ -37,35 +37,42 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 def build_questions():
-    for i in re.split("\s*(?=[A|B]-[0-9]*-[0-9]*-[0-9]*.*)", RawQuestions):
-        if re.search("([A|B]-[0-9]*-[0-9]*-[0-9]*)", i):
-            m = re.compile("(?P<ID>[A|B]-[0-9]*-[0-9]*-[0-9]*)( \()(?P<ANSWER>[A-D])(\) )(?P<QUESTION>.*)(\r\n)(A\t)(?P<QA>.*)(\r\n)(B\t)(?P<QB>.*)(\r\n)(C\t)(?P<QC>.*)(\r\n)(D\t)(?P<QD>.*)(\r\n)(>)(?P<KEYWORD>.*)", re.MULTILINE)
-            ma = m.match(i)
-            if not ma:
-                wat.append(i)
-                print('Parsing error')
-                print(wat)
-                continue
-            AllQuestions[ma.group('ID')] = {'question':ma.group('QUESTION'),
-            'answer':ma.group('ANSWER'),'qa':ma.group('QA'),'qb':ma.group('QB'),
-            'qc':ma.group('QC'),'qd':ma.group('QD'),'keyword':ma.group('KEYWORD')}
+    for i in re.split("(?=[A|B]-[0-9]*-[0-9]*-[0-9]*.*)", RawQuestions):
+        if not re.search("([A|B]-[0-9]*-[0-9]*-[0-9]*)", i): continue
+        ma = re.match("(?P<ID>[A|B]-[0-9]*-[0-9]*-[0-9]*)( \()(?P<ANSWER>[A-D])(\) )(?P<QUESTION>.*)(\r?\n)(A\t)(?P<QA>.*)(\r?\n)(B\t)(?P<QB>.*)(\r?\n)(C\t)(?P<QC>.*)(\r?\n)(D\t)(?P<QD>.*)(\r?\n)(>)(?P<KEYWORD>.*)",
+                       i,
+                       re.MULTILINE)
+        if not ma:
+            wat = bytes(i, "ascii")
+            print('Parsing error')
+            print(wat)
+            continue
+        AllQuestions[ma.group('ID')] = {
+                'question':ma.group('QUESTION'),
+                'answer':ma.group('ANSWER'),
+                'qa':ma.group('QA'),
+                'qb':ma.group('QB'),
+                'qc':ma.group('QC'),
+                'qd':ma.group('QD'),
+                'keyword':ma.group('KEYWORD')}
     re.purge()
 
 def ask_question():
     print('\n'+'-'*30)
-    toAsk = random.choice(AllQuestions.keys())
+    toAsk = random.choice(list(AllQuestions.keys()))
     print("%s\nQuestion: %s\nPossible Answers\nA: %s\nB: %s\nC: %s\nD: %s\n"
     % (str(toAsk),AllQuestions[toAsk]['question'],AllQuestions[toAsk]['qa'],
     AllQuestions[toAsk]['qb'],AllQuestions[toAsk]['qc'],
     AllQuestions[toAsk]['qd']))
-    getAnswer = raw_input("Please enter your answer: ")
+    getAnswer = input("Please enter your answer: ")
     print('\n'+'-'*30)
     if str(getAnswer).lower() == str(AllQuestions[toAsk]['answer']).lower():
         print('Correct!\n')
         AnsweredRight.add(toAsk)
     else:
-        print('WRONG!\nHere is why you are wrong: %s' %
-        AllQuestions[toAsk]['keyword'])
+        print('WRONG! the answer was %s\nHere is why you are wrong:\n%s' %
+        (AllQuestions[toAsk]['answer'],
+        AllQuestions[toAsk]['keyword']))
         AnsweredWrong.add(toAsk)
     print('so far you have gotten %i right and %i wrong.' %
     (len(AnsweredRight),len(AnsweredWrong)))
