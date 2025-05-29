@@ -8,11 +8,11 @@ at http://wp.rac.ca/exhaminer-v2-5/ which reportedly works in wine, but since
 I'm a terminal jockey I wanted a lighter weight and self spun study aid
 """
 
-import signal
 import sys
 import random
 import re
 import textwrap
+import traceback
 
 #this also works with Questions_Advanced
 #it's expected that this
@@ -45,16 +45,6 @@ class Question:
             out += f"  | {k}: {textwrap.fill(v).replace('\n', '\n  |    ')}\n"
 
         return out
-
-def signal_handler(signal, frame):
-    print('\n'+'-_'*30)
-    print('so far you have gotten %i right and %i wrong.' % (len(AnsweredRight),len(AnsweredWrong)))
-    print('-_'*30)
-    if len(AnsweredWrong) > 0:
-        print('\nYou answered the following questions Wrong.')
-        for wrongAnswers in AnsweredWrong:
-            print(wrongAnswers)
-    sys.exit(0)
 
 def build_questions(bank_path: str) -> dict[str, Question]:
     """
@@ -123,10 +113,22 @@ def main():
         exit(1)
     bank_path = sys.argv[1]
     q_bank = build_questions(bank_path)
-    while True:
-        signal.signal(signal.SIGINT, signal_handler)
-        print('Press Ctrl+C to quit')
-        random_question(q_bank)
+    try:
+        while True:
+            print('Press Ctrl+C to quit')
+            random_question(q_bank)
+    except(KeyboardInterrupt, EOFError) as e:
+        print('\n'+'-_'*30)
+        print('so far you have gotten %i right and %i wrong.' % (len(AnsweredRight),len(AnsweredWrong)))
+        print('-_'*30)
+        if len(AnsweredWrong) > 0:
+            print('\nYou answered the following questions Wrong.')
+            for wrongAnswers in AnsweredWrong:
+                print(wrongAnswers)
+    except Exception as e:
+        print("broke with exception:")
+        traceback.print_exception(e)
+
 
 if __name__ == '__main__':
     main()
