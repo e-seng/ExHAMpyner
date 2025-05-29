@@ -30,13 +30,20 @@ class Question:
                  qID: str,
                  qQuestion: str,
                  qCorrect: str,
-                 qAnswers: str,
+                 qAnswers: dict[str, str],
                  qKeyWord: str,):
         self.qID = qID
         self.qQuestion = qQuestion
         self.qCorrect = qCorrect
         self.qAnswers = qAnswers
         self.qKeyWord = qKeyWord
+
+    def get_answers(self):
+        out = "\n"
+        for k, v in self.qAnswers.items():
+            out += f"  | {k}: {v}\n"
+
+        return out
 
 def signal_handler(signal, frame):
     print('\n'+'-_'*30)
@@ -60,6 +67,7 @@ def build_questions(bank_path: str) -> dict[str, Question]:
     about the question
     """
     rawQuestions = None
+    allQuestions = {}
     with open(bank_path, "r") as f:
         rawQuestions = f.read()
 
@@ -73,32 +81,35 @@ def build_questions(bank_path: str) -> dict[str, Question]:
             print('Parsing error')
             print(wat)
             continue
-        AllQuestions[ma.group('ID')] = {
-                'question':ma.group('QUESTION'),
-                'answer':ma.group('ANSWER'),
-                'qa':ma.group('QA'),
-                'qb':ma.group('QB'),
-                'qc':ma.group('QC'),
-                'qd':ma.group('QD'),
-                'keyword':ma.group('KEYWORD')}
+        allQuestions[ma.group('ID')] = Question(ma.group('ID'),
+                                                ma.group('QUESTION'),
+                                                ma.group('ANSWER'),
+                                                {"A": ma.group('QA'),
+                                                 "B": ma.group('QB'),
+                                                 "C": ma.group('QC'),
+                                                 "D": ma.group('QD')},
+                                                ma.group('KEYWORD'))
     re.purge()
 
-def ask_question():
+    return allQuestions
+
+def random_question(allQuestions: dict[str, Question]):
     print('\n'+'-'*30)
-    toAsk = random.choice(list(AllQuestions.keys()))
-    print("%s\nQuestion: %s\nPossible Answers\nA: %s\nB: %s\nC: %s\nD: %s\n"
-    % (str(toAsk),AllQuestions[toAsk]['question'],AllQuestions[toAsk]['qa'],
-    AllQuestions[toAsk]['qb'],AllQuestions[toAsk]['qc'],
-    AllQuestions[toAsk]['qd']))
+    toAsk = random.choice(list(allQuestions.keys()))
+    print(f"""{toAsk}
+Q: {allQuestions[toAsk].qQuestion}
+Choices:
+{allQuestions[toAsk].get_answers()}
+    """)
     getAnswer = input("Please enter your answer: ")
     print('\n'+'-'*30)
-    if str(getAnswer).lower() == str(AllQuestions[toAsk]['answer']).lower():
+    if str(getAnswer).lower() == str(allQuestions[toAsk].qCorrect).lower():
         print('Correct!\n')
         AnsweredRight.add(toAsk)
     else:
         print('WRONG! the answer was %s\nHere is why you are wrong:\n%s' %
-        (AllQuestions[toAsk]['answer'],
-        AllQuestions[toAsk]['keyword']))
+        (allQuestions[toAsk].qAnswer,
+        allQuestions[toAsk].qKeyword))
         AnsweredWrong.add(toAsk)
     print('so far you have gotten %i right and %i wrong.' %
     (len(AnsweredRight),len(AnsweredWrong)))
@@ -109,11 +120,11 @@ def main():
         print(f"[-] usage: {sys.argv[0]} <./path/to/question/bank>")
         exit(1)
     bank_path = sys.argv[1]
-    build_questions(bank_path)
+    q_bank = build_questions(bank_path)
     while True:
         signal.signal(signal.SIGINT, signal_handler)
         print('Press Ctrl+C to quit')
-        ask_question()
+        random_question(q_bank)
 
 if __name__ == '__main__':
     main()
