@@ -84,26 +84,26 @@ def build_questions(bank_path: str) -> dict[str, Question]:
 
     return allQuestions
 
-def random_question(allQuestions: dict[str, Question],
+
+def display_question(question,
                     tuiMode=True):
     print("\033[100A\033[J", end="")
-    toAsk = random.choice(list(allQuestions.keys()))
-    print(f"""Q: {toAsk} - {textwrap.fill(allQuestions[toAsk].qQuestion, 70)}
-{allQuestions[toAsk].get_answers()}""")
+    print(f"""Q: {question.qID} - {textwrap.fill(question.qQuestion, 70)}
+{question.get_answers()}""")
     print('\n'+'-'*30)
     print(f'so far you have gotten {len(AnsweredRight)} right and {len(AnsweredWrong)} wrong.')
 
     getAnswer = input("Please enter your answer: ")
     print('\n'+'-'*30)
-    if str(getAnswer).lower() == str(allQuestions[toAsk].qCorrect).lower():
+    if str(getAnswer).lower() == str(question.qCorrect).lower():
         print('Correct!\n')
-        AnsweredRight.add(toAsk)
+        AnsweredRight.add(question.qID)
     else:
-        print(f"""WRONG! the answer was {allQuestions[toAsk].qCorrect}
+        print(f"""WRONG! the answer was {question.qCorrect}
 
 Here is why you are wrong:
-{textwrap.fill(allQuestions[toAsk].qKeyWord, 80)}""")
-        AnsweredWrong.add(toAsk)
+{textwrap.fill(question.qKeyWord, 80)}""")
+        AnsweredWrong.add(question.qID)
         input('Press enter to continue...')
 
 
@@ -115,8 +115,9 @@ def main():
     q_bank = build_questions(bank_path)
     try:
         while True:
-            print('Press Ctrl+C to quit')
-            random_question(q_bank)
+            # randomly choose from the entire set of questions
+            question = q_bank[random.choice(list(q_bank.keys()))]
+            display_question(question)
     except(KeyboardInterrupt, EOFError) as e:
         print('\n'+'-_'*30)
         print('so far you have gotten %i right and %i wrong.' % (len(AnsweredRight),len(AnsweredWrong)))
