@@ -12,6 +12,7 @@ import signal
 import sys
 import random
 import re
+import textwrap
 
 #this also works with Questions_Advanced
 #it's expected that this
@@ -41,7 +42,7 @@ class Question:
     def get_answers(self):
         out = "\n"
         for k, v in self.qAnswers.items():
-            out += f"  | {k}: {v}\n"
+            out += f"  | {k}: {textwrap.fill(v).replace('\n', '\n  |    ')}\n"
 
         return out
 
@@ -73,7 +74,7 @@ def build_questions(bank_path: str) -> dict[str, Question]:
 
     for i in re.split("(?=[A|B]-[0-9]*-[0-9]*-[0-9]*.*)", rawQuestions):
         if not re.search("([A|B]-[0-9]*-[0-9]*-[0-9]*)", i): continue
-        ma = re.match("(?P<ID>[A|B]-[0-9]*-[0-9]*-[0-9]*)( \()(?P<ANSWER>[A-D])(\) )(?P<QUESTION>.*)(\r?\n)(A\t)(?P<QA>.*)(\r?\n)(B\t)(?P<QB>.*)(\r?\n)(C\t)(?P<QC>.*)(\r?\n)(D\t)(?P<QD>.*)(\r?\n)(>)(?P<KEYWORD>.*)",
+        ma = re.match("(?P<ID>[A|B]-[0-9]*-[0-9]*-[0-9]*)( \()(?P<ANSWER>[A-D])(\) )(?P<QUESTION>.*)(\r?\n)(A\t)(?P<QA>.*)(\r?\n)(B\t)(?P<QB>.*)(\r?\n)(C\t)(?P<QC>.*)(\r?\n)(D\t)(?P<QD>.*)(\r?\n)(> )(?P<KEYWORD>.*)",
                        i,
                        re.MULTILINE)
         if not ma:
@@ -93,26 +94,27 @@ def build_questions(bank_path: str) -> dict[str, Question]:
 
     return allQuestions
 
-def random_question(allQuestions: dict[str, Question]):
-    print('\n'+'-'*30)
+def random_question(allQuestions: dict[str, Question],
+                    tuiMode=True):
+    print("\033[100A\033[J", end="")
     toAsk = random.choice(list(allQuestions.keys()))
-    print(f"""{toAsk}
-Q: {allQuestions[toAsk].qQuestion}
-Choices:
-{allQuestions[toAsk].get_answers()}
-    """)
+    print(f"""Q: {toAsk} - {textwrap.fill(allQuestions[toAsk].qQuestion, 70)}
+{allQuestions[toAsk].get_answers()}""")
+    print('\n'+'-'*30)
+    print(f'so far you have gotten {len(AnsweredRight)} right and {len(AnsweredWrong)} wrong.')
+
     getAnswer = input("Please enter your answer: ")
     print('\n'+'-'*30)
     if str(getAnswer).lower() == str(allQuestions[toAsk].qCorrect).lower():
         print('Correct!\n')
         AnsweredRight.add(toAsk)
     else:
-        print('WRONG! the answer was %s\nHere is why you are wrong:\n%s' %
-        (allQuestions[toAsk].qAnswer,
-        allQuestions[toAsk].qKeyword))
+        print(f"""WRONG! the answer was {allQuestions[toAsk].qCorrect}
+
+Here is why you are wrong:
+{textwrap.fill(allQuestions[toAsk].qKeyWord, 80)}""")
         AnsweredWrong.add(toAsk)
-    print('so far you have gotten %i right and %i wrong.' %
-    (len(AnsweredRight),len(AnsweredWrong)))
+        input('Press enter to continue...')
 
 
 def main():
